@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Add a task !{% endblock %}
+
+{% block body %}
+    {{ form_start(taskForm) }}
+    {{ form_widget(taskForm.title , {'attr' : {'placeholder' : 'Title'}}) }}
+    {{ form_widget(taskForm.content, {'attr' : {'placeholder' : 'Description'}}) }}
+    <button   type="submit" name="_submit"> Save</button>
+    {{ form_end(taskForm) }}
+
+{% endblock %}
