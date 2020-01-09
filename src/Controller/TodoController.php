@@ -2,13 +2,10 @@
 
 namespace App\Controller;
 
-use App\Entity\Task;
+use App\Document\Task;
 use App\Form\TaskFormType;
-use phpDocumentor\Reflection\Types\Integer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Doctrine\ODM\MongoDB\DocumentManager as DocumentManager;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,11 +19,13 @@ class TodoController extends AbstractController
     /**
      * @Route("/", name="get_all")
      */
-    public function all(SessionInterface $session)
+    public function all(DocumentManager $dm)
     {
-        $todo = $session->get('todo');
+        $repo = $dm->getRepository(Task::class);
+        $todo = $repo->findAll();
+
         return $this->render('/todo/index.html.twig', [
-            'todo'=>$todo
+            'todo' => $todo
         ]);
     }
 
@@ -34,9 +33,10 @@ class TodoController extends AbstractController
     /**
      * @Route("/clear", name="clear_all")
      */
-    public function clear(SessionInterface $session)
+    public function clear(DocumentManager $dm)
     {
-        $todo = $session->set('todo',[]);
+        $repo = $dm->getRepository(Task::class);
+        $todo = $repo->findAll();
 
         return $this->render('/todo/index.html.twig', [
             'todo'=>$todo
@@ -45,13 +45,17 @@ class TodoController extends AbstractController
     /**
      * @Route("/done", name="done_all")
      */
-    public function done(SessionInterface $session)
+    public function done(DocumentManager $dm)
     {
-        $sessionTodo = $session->get('todo');
-        foreach ($sessionTodo as $key => $value){
-                    $sessionTodo[$key]->setDone(true);
-                    $todo = $session->set('todo',$sessionTodo);
-                }
+        $repo = $dm->getRepository(Task::class);
+        $todo = $repo->findAll();
+
+        foreach ($todo as $task){
+            $task->setDone(true);
+            $dm->persist($task);
+            $dm->flush();
+        }
+
         return $this->redirectToRoute('get_all');
     }
 
@@ -60,7 +64,7 @@ class TodoController extends AbstractController
      * @param Request $request
      * @return RedirectResponse|Response
      */
-    public function new(Request $request, SessionInterface $session)
+    public function new(Request $request, DocumentManager $dm)
     {
         $form = $this->createForm(TaskFormType::class);
         $form->handleRequest($request);
@@ -68,17 +72,11 @@ class TodoController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
             $task = new Task();
-            $task->setId(); 
             $task->setTitle($data['title']);
             $task->setContent($data['content']);
+            $dm->persist($task);
+            $dm->flush();
 
-
-            $sessionTodo = $session->get('todo');
-            if(is_null($sessionTodo) || !is_array($sessionTodo)){
-                $sessionTodo = [];
-            }
-            $sessionTodo[] = $task;
-            $session->set('todo', $sessionTodo);
             return $this->redirectToRoute('get_all');
         }
 
@@ -90,16 +88,11 @@ class TodoController extends AbstractController
     /**
      * @Route("/remove/{taskId}", name="remove_task") 
      */
-    public function removeTask (SessionInterface $session, String $taskId) {
-        $sessionTodo = $session->get('todo');
-        foreach ($sessionTodo as $key => $value){
-            $id = $value->getId();
-                if ($id == $taskId){
-                    unset($sessionTodo[$key]);
-                    $todo = $session->set('todo',$sessionTodo);
-                break;
-                }
-        }
+    public function removeTask (DocumentManager $dm, $taskId) {
+        $repo = $dm->getRepository(Task::class);
+        $task = $repo->findBy(['id' => $taskId]);
+        $dm->remove($task);
+        $dm->flush();
 
         return $this->redirectToRoute('get_all');
     }
@@ -107,19 +100,13 @@ class TodoController extends AbstractController
     /**
      * @Route("/done/{taskId}", name="change_status")
      */
-    public function changeTaskStatus (SessionInterface $session, String $taskId) {
-        $sessionTodo = $session->get('todo');
-        foreach ($sessionTodo as $key => $value){
-            $id = $value->getId();
-                if ($id == $taskId){
-                    $status =  $value->getDone();
-                    $sessionTodo[$key]->setDone(!$status);
-                    $todo = $session->set('todo',$sessionTodo);
-                break;
-                }
-        }
+    public function changeTaskStatus (DocumentManager $dm, $taskId) {
+        $repo = $dm->getRepository(Task::class);
+        $task = $repo->findBy(['id' => $taskId]);
+        $status = $task->getStatus();
+        $task->setStatus(!$status);
+        $dm->flush();
+        
         return $this->redirectToRoute('get_all');
     }
-
-
 }

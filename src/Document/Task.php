@@ -1,49 +1,38 @@
 <?php
 
-namespace App\Entity;
+namespace App\Document;
 
+use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
 
-use phpDocumentor\Reflection\Types\Boolean;
+/** @Document(db="php-todo", collection="tasks") */
 
 class Task
 {
     /**
-     * @var string
+     * @MongoDB\Id
      */
-    private $id;
+    protected $id;
 
     /**
-     * @var string|null
-     *
+     * @MongoDB\Field(type="string")
      */
     private $title;
 
     /**
-     * @var string|null
-     *
+     * @MongoDB\Field(type="string")
      */
     private $content;
 
     /**
-     * @var Boolean
-     *
+     * @MongoDB\Field(type="boolean")
      */
     private $done = false;
-
-
 
 
     public function getId(): ?string
     {
         return $this->id;
     }
-    public function setId()
-    {
-        $this->id = uniqid();
-
-        return $this;
-    }
-
 
 
     public function getTitle(): ?string
@@ -53,7 +42,6 @@ class Task
     public function setTitle($title)
     {
         $this->title = $title;
-
         return $this;
     }
 
@@ -65,23 +53,17 @@ class Task
     public function setContent($content)
     {
         $this->content = $content;
-
         return $this;
     }
-
 
 
     public function getDone()
     {
         return $this->done;
     }
-
     public function setDone($done)
     {
         $this->done = $done;
-
         return $this;
     }
-
-
 }
