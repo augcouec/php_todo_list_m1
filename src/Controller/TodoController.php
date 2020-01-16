@@ -35,13 +35,15 @@ class TodoController extends AbstractController
      */
     public function clear(DocumentManager $dm)
     {
+        /** @var Doctrine\ODM\MongoDB\Repository\DocumentRepository $repo */
         $repo = $dm->getRepository(Task::class);
-        $todo = $repo->findAll();
 
-        return $this->render('/todo/index.html.twig', [
-            'todo'=>$todo
-        ]);
+        $repo->createQueryBuilder()->remove()->getQuery()->execute();
+
+        return $this->redirectToRoute('get_all');
     }
+
+
     /**
      * @Route("/done", name="done_all")
      */
@@ -76,7 +78,6 @@ class TodoController extends AbstractController
             $task->setContent($data['content']);
             $dm->persist($task);
             $dm->flush();
-
             return $this->redirectToRoute('get_all');
         }
 
@@ -90,7 +91,7 @@ class TodoController extends AbstractController
      */
     public function removeTask (DocumentManager $dm, $taskId) {
         $repo = $dm->getRepository(Task::class);
-        $task = $repo->findBy(['id' => $taskId]);
+        $task = $repo->findOneBy(['id' => $taskId]);
         $dm->remove($task);
         $dm->flush();
 
@@ -102,9 +103,9 @@ class TodoController extends AbstractController
      */
     public function changeTaskStatus (DocumentManager $dm, $taskId) {
         $repo = $dm->getRepository(Task::class);
-        $task = $repo->findBy(['id' => $taskId]);
-        $status = $task->getStatus();
-        $task->setStatus(!$status);
+        $task = $repo->findOneBy(['id' => $taskId]);
+        $done = $task->getDone(); 
+        $task->setDone(!$done);
         $dm->flush();
         
         return $this->redirectToRoute('get_all');

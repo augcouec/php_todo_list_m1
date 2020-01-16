@@ -3,6 +3,7 @@
 namespace App\Document;
 
 use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
+use Doctrine\ODM\MongoDB\Mapping\Annotations\Document;
 
 /** @Document(db="php-todo", collection="tasks") */
 
